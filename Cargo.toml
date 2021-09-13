@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2018"
 readme = "README.md"
 license = "MIT"
-edition = "2018"
 authors = ["Said van de Klundert"]
 description = "Async Rest client"
 repository = "https://github.com/saidvandeklundert/arrest"
