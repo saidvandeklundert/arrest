@@ -5,6 +5,7 @@ edition = "2018"
 readme = "README.md"
 license = "MIT"
 authors = ["Said van de Klundert"]
+keywords = ["rest", "client", "json", "tokio", "reqwest"]
 description = "Async Rest client"
 repository = "https://github.com/saidvandeklundert/arrest"
 

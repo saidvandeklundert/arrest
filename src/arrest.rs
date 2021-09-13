@@ -10,6 +10,7 @@ use std::io::BufReader;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
+/// REST client to make HTTP GET requests.
 #[derive(Debug, Clone)]
 pub struct Client {
     base_url: String,
