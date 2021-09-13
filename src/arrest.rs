@@ -18,7 +18,7 @@ pub struct Client {
     client: reqwest::Client,
 }
 /*
-Use Client::new as a contstructor.
+Use Client::new as a constructor.
 After constructing the client, set the headers and the inn-client (reqwest).
 
 Use client.api_call(&str) to make asynchronous API calls.
