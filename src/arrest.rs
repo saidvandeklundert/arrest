@@ -59,4 +59,25 @@ impl Client {
         let res = self.client.get(url).send().await;
         return res;
     }
+    pub async fn api_call_vec(self, paths: Vec<String>) -> Vec<String> {
+        let (tx, mut rx) = mpsc::channel(32);
+        for path in paths {
+            let tx = tx.clone();
+            let aself = self.clone();
+            tokio::spawn(async move {
+                tx.send(aself.api_call(&path).await).await;
+            });
+        }
+        drop(tx);
+        let mut api_call_results: Vec<String> = Vec::new();
+        // Read from all the channels:
+        while let Some(api_call_result) = rx.recv().await {
+            let response = api_call_result.unwrap();
+            println!("reqwest result: {:?}", response.status());
+            let body = response.text().await;
+            let text: String = body.unwrap();
+            api_call_results.push(text);
+        }
+        return api_call_results;
+    }
 }
