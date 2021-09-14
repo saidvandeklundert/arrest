@@ -1,4 +1,5 @@
 use crate::header::HeaderMap;
+use async_trait::async_trait;
 use reqwest::header;
 use serde;
 use serde::{Deserialize, Serialize};
@@ -55,10 +56,14 @@ impl Client {
             .unwrap();
         self.client = client
     }
+
+    // Get target URL
     pub async fn api_call(&self, url: &str) -> Result<reqwest::Response, reqwest::Error> {
         let res = self.client.get(url).send().await;
         return res;
     }
+
+    // Make several asynchronous get requests for target URL:
     pub async fn api_call_vec(self, paths: Vec<String>) -> Vec<String> {
         let (tx, mut rx) = mpsc::channel(32);
         for path in paths {
@@ -80,4 +85,40 @@ impl Client {
         }
         return api_call_results;
     }
+
+    // Make several asynchronous get requests for target URL:
+    // fn generic<T>(_s: SGen<T>) {}
+    pub async fn api_call_vec_type<T>(self, paths: Vec<String>, struct_response: T) -> Vec<T> {
+        let (tx, mut rx) = mpsc::channel(32);
+        for path in paths {
+            let tx = tx.clone();
+            let aself = self.clone();
+            tokio::spawn(async move {
+                tx.send(aself.api_call(&path).await).await;
+            });
+        }
+        drop(tx);
+        let mut api_call_results: Vec<String> = Vec::new();
+        // Read from all the channels:
+        while let Some(api_call_result) = rx.recv().await {
+            let response = api_call_result.unwrap();
+            println!("reqwest result: {:?}", response.status());
+            let body = response.text().await;
+            let text: String = body.unwrap();
+            api_call_results.push(text);
+        }
+        dbg!(api_call_results);
+        let mut vec_of_structs: Vec<T> = Vec::new();
+        return vec_of_structs;
+    }
 }
+
+#[async_trait]
+pub trait Arrest {
+    async fn run(&self) {
+        println!("Good morning.")
+    }
+}
+
+#[async_trait]
+impl Arrest for Client {}
