@@ -1,4 +1,5 @@
 use crate::header::HeaderMap;
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use reqwest::header;
 use serde;
@@ -86,7 +87,7 @@ impl Client {
         self,
         paths: Vec<String>,
         struct_response: T,
-    ) -> Vec<T>
+    ) -> Result<Vec<T>>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -102,21 +103,20 @@ impl Client {
         let mut api_call_results: Vec<String> = Vec::new();
         // Read from all the channels:
         while let Some(api_call_result) = rx.recv().await {
-            let response = api_call_result.unwrap();
+            let response = api_call_result?;
             println!("reqwest result: {:?}", response.status());
-            let body = response.text().await;
-            let text: String = body.unwrap();
+            let text = response.text().await?;
             api_call_results.push(text.to_string());
         }
         // build the serialized data and return it:
-        let resulting_serialized = self.deserialize(api_call_results.clone(), struct_response);
-        return resulting_serialized;
+        let resulting_serialized = self.deserialize(api_call_results.clone(), struct_response)?;
+        return Ok(resulting_serialized);
     }
     pub fn deserialize<'a, T: serde::de::DeserializeOwned>(
         self,
         api_responses: Vec<String>,
         struct_response: T,
-    ) -> Vec<T>
+    ) -> Result<Vec<T>>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -130,10 +130,10 @@ impl Client {
                     let json_data: T = json_str;
                     vec_of_structs.push(json_data);
                 }
-                Err(err) => println!("ERROR deserializing: {}", err),
+                Err(err) => println!("error deserializing for struct {}", err), // need to come up with a logger??
             }
         }
-        return vec_of_structs;
+        return Ok(vec_of_structs);
     }
 }
 
@@ -143,6 +143,3 @@ pub trait Arrest {
         println!("Good morning.")
     }
 }
-
-#[async_trait]
-impl Arrest for Client {}
