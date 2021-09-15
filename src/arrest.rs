@@ -2,12 +2,6 @@ use crate::header::HeaderMap;
 use async_trait::async_trait;
 use reqwest::header;
 use serde;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::env;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
@@ -88,7 +82,14 @@ impl Client {
 
     // Make several asynchronous get requests for target URL:
     // fn generic<T>(_s: SGen<T>) {}
-    pub async fn api_call_vec_type<T>(self, paths: Vec<String>, struct_response: T) -> Vec<T> {
+    pub async fn arrest<'a, T: serde::de::DeserializeOwned>(
+        self,
+        paths: Vec<String>,
+        struct_response: T,
+    ) -> Vec<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         let (tx, mut rx) = mpsc::channel(32);
         for path in paths {
             let tx = tx.clone();
@@ -105,10 +106,33 @@ impl Client {
             println!("reqwest result: {:?}", response.status());
             let body = response.text().await;
             let text: String = body.unwrap();
-            api_call_results.push(text);
+            api_call_results.push(text.to_string());
         }
-        dbg!(api_call_results);
+        // build the serialized data and return it:
+        let resulting_serialized = self.deserialize(api_call_results.clone(), struct_response);
+        return resulting_serialized;
+    }
+    pub fn deserialize<'a, T: serde::de::DeserializeOwned>(
+        self,
+        api_responses: Vec<String>,
+        struct_response: T,
+    ) -> Vec<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         let mut vec_of_structs: Vec<T> = Vec::new();
+        let api_text_results = api_responses.iter();
+        for val in api_text_results {
+            let owner = val.to_string();
+            let serde_result = serde_json::from_str(&owner);
+            match serde_result {
+                Ok(json_str) => {
+                    let json_data: T = json_str;
+                    vec_of_structs.push(json_data);
+                }
+                Err(err) => println!("ERROR deserializing: {}", err),
+            }
+        }
         return vec_of_structs;
     }
 }
