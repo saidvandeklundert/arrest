@@ -27,6 +27,8 @@ impl HttpBinAnything {
     pub fn update_queue(&mut self, url: String) {
         self.queue.push(url);
     }
+
+    // To be implemented
     pub fn flush_queue(&mut self) -> Vec<String> {
         let u: Vec<String> = self.queue.drain(0..).collect();
         return u;
