@@ -1,5 +1,5 @@
 /*
-    cargo run --example arrest_example_1
+    cargo run --example arrest_example_2
 */
 use serde;
 use serde::{Deserialize, Serialize};
@@ -10,11 +10,6 @@ async fn main() {
     let mut client = arrest::Client::new(String::from(""), String::from(""));
     client.set_headers();
     client.set_client();
-    //
-    let urls: Vec<String> = vec![
-        String::from("http://httpbin.org/anything"),
-        String::from("http://httpbin.org/anything"),
-    ];
 
     let mut httpbin_second = HttpBinAnything::default();
     httpbin_second.update_queue(String::from("http://httpbin.org/anything"));
