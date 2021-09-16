@@ -14,6 +14,7 @@ async fn main() {
     let mut httpbin_second = HttpBinAnything::default();
     httpbin_second.update_queue(String::from("http://httpbin.org/anything"));
     httpbin_second.update_queue(String::from("http://httpbin.org/anything"));
+    httpbin_second.update_queue(String::from("http://httpbin.org/anything"));
     let res = httpbin_second.get_queue(client).await;
     dbg!(res);
 }
