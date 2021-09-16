@@ -25,14 +25,15 @@ async fn main() {
 
 impl HttpBinAnything {
     pub async fn get_queue(self, client: arrest::Client) -> Vec<HttpBinAnything> {
-        let res = client.arrest(self.flush_queue(), self).await.unwrap();
+        let res = client.arrest(self.queue.clone(), self).await.unwrap();
         res
     }
     pub fn update_queue(&mut self, url: String) {
         self.queue.push(url);
     }
-    pub fn flush_queue(&self) -> Vec<String> {
-        self.queue.clone()
+    pub fn flush_queue(&mut self) -> Vec<String> {
+        let u: Vec<String> = self.queue.drain(0..).collect();
+        return u;
     }
 }
 //http://httpbin.org/anything
