@@ -143,3 +143,6 @@ pub trait Arrest {
         println!("Good morning.")
     }
 }
+pub fn function() {
+    println!("called `my_mod::function()`");
+}
