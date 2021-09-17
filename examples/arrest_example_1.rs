@@ -6,10 +6,8 @@ use serde::{Deserialize, Serialize};
 
 #[tokio::main]
 async fn main() {
-    // define client
-    let mut client = arrest::Client::new(String::from(""), String::from(""));
-    client.set_headers();
-    client.set_client();
+    let mut client = arrest::Client::new();
+    client.set_client(6, false);
     let urls: Vec<String> = vec![
         String::from("http://httpbin.org/anything"),
         String::from("http://httpbin.org/anything"),
@@ -19,7 +17,6 @@ async fn main() {
     dbg!(res);
 }
 
-//http://httpbin.org/anything
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct HttpBinAnything {
     method: String,

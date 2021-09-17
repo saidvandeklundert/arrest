@@ -9,8 +9,8 @@ use tokio::sync::mpsc;
 /// REST client to make HTTP GET requests.
 #[derive(Debug, Clone)]
 pub struct Client {
-    base_url: String,
-    bearer: String,
+    base_url: Option<String>,
+    bearer: Option<String>,
     headers: HeaderMap,
     client: reqwest::Client,
 }
@@ -21,19 +21,24 @@ After constructing the client, set the headers and the inn-client (reqwest).
 Use client.api_call(&str) to make asynchronous API calls.
 */
 impl Client {
-    pub fn new(base_url: String, bearer: String) -> Self {
+    pub fn new() -> Self {
         Self {
-            base_url: base_url,
-            bearer: bearer,
+            base_url: None,
+            bearer: None,
             headers: HeaderMap::new(),
             client: reqwest::Client::new(),
         }
     }
+    pub fn set_bearer(&mut self, bearer: String) {
+        self.bearer = Some(bearer);
+    }
+
     pub fn set_headers(&mut self) {
         let mut headers = header::HeaderMap::new();
+        let bearer = &self.bearer.clone().unwrap();
         headers.insert(
             header::AUTHORIZATION,
-            header::HeaderValue::from_str(&self.bearer).unwrap(),
+            header::HeaderValue::from_str(bearer).unwrap(),
         );
         headers.insert(
             "accept",
@@ -42,11 +47,11 @@ impl Client {
         self.headers = headers
     }
 
-    pub fn set_client(&mut self) {
+    pub fn set_client(&mut self, time_out: u64, accept_invalid_cert: bool) {
         let client: reqwest::Client = reqwest::Client::builder()
             .default_headers(self.headers.clone())
-            .danger_accept_invalid_certs(true)
-            .timeout(Duration::from_secs(9))
+            .danger_accept_invalid_certs(accept_invalid_cert)
+            .timeout(Duration::from_secs(time_out))
             .build()
             .unwrap();
         self.client = client
@@ -112,6 +117,8 @@ impl Client {
         let resulting_serialized = self.deserialize(api_call_results.clone(), struct_response)?;
         return Ok(resulting_serialized);
     }
+
+    // Deserialize the struct
     pub fn deserialize<'a, T: serde::de::DeserializeOwned>(
         self,
         api_responses: Vec<String>,

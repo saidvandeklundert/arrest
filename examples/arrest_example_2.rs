@@ -6,10 +6,8 @@ use serde::{Deserialize, Serialize};
 
 #[tokio::main]
 async fn main() {
-    // define client
-    let mut client = arrest::Client::new(String::from(""), String::from(""));
-    client.set_headers();
-    client.set_client();
+    let mut client = arrest::Client::new();
+    client.set_client(6, false);
 
     let mut httpbin_second = HttpBinAnything::default();
     httpbin_second.update_queue(String::from("http://httpbin.org/anything"));
@@ -26,12 +24,6 @@ impl HttpBinAnything {
     }
     pub fn update_queue(&mut self, url: String) {
         self.queue.push(url);
-    }
-
-    // To be implemented
-    pub fn flush_queue(&mut self) -> Vec<String> {
-        let u: Vec<String> = self.queue.drain(0..).collect();
-        return u;
     }
 }
 //http://httpbin.org/anything
