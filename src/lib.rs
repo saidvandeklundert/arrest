@@ -80,8 +80,12 @@ impl Client {
             let response = api_call_result.unwrap();
             println!("reqwest result: {:?}", response.status());
             let body = response.text().await;
-            let text: String = body.unwrap();
-            api_call_results.push(text);
+            match body {
+                Ok(text) => {
+                    api_call_results.push(text);
+                }
+                Err(err) => println!("error making API call {}", err),
+            }
         }
         return api_call_results;
     }
