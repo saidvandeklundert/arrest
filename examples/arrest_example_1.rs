@@ -11,6 +11,7 @@ async fn main() {
     let urls: Vec<String> = vec![
         String::from("http://httpbin.org/anything"),
         String::from("http://httpbin.org/anything"),
+        String::from("http://thisendpointdoesnotexist"),
     ];
     let httpbin = HttpBinAnything::default();
     let res = client.arrest(urls, httpbin).await.unwrap();

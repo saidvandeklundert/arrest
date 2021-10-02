@@ -20,7 +20,7 @@ async fn main() {
 impl HttpBinAnything {
     pub async fn get_queue(self, client: arrest::Client) -> Vec<HttpBinAnything> {
         let res = client.arrest(self.queue.clone(), self).await.unwrap();
-        res
+        res.0
     }
     pub fn update_queue(&mut self, url: String) {
         self.queue.push(url);
