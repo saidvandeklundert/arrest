@@ -58,45 +58,22 @@ impl Client {
     }
 
     // Get target URL
-    pub async fn api_call(&self, url: &str) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn get_url(&self, url: &str) -> (Result<reqwest::Response, reqwest::Error>, String) {
+        let url_string = url.to_owned();
         let res = self.client.get(url).send().await;
-        return res;
-    }
-
-    // Make several asynchronous get requests for target URL:
-    pub async fn api_call_vec(self, paths: Vec<String>) -> Vec<String> {
-        let (tx, mut rx) = mpsc::channel(32);
-        for path in paths {
-            let tx = tx.clone();
-            let aself = self.clone();
-            tokio::spawn(async move {
-                tx.send(aself.api_call(&path).await).await;
-            });
-        }
-        drop(tx);
-        let mut api_call_results: Vec<String> = Vec::new();
-        // Read from all the channels:
-        while let Some(api_call_result) = rx.recv().await {
-            let response = api_call_result.unwrap();
-            println!("reqwest result: {:?}", response.status());
-            let body = response.text().await;
-            match body {
-                Ok(text) => {
-                    api_call_results.push(text);
-                }
-                Err(err) => println!("error making API call {}", err),
-            }
-        }
-        return api_call_results;
+        return (res, url_string);
     }
 
     // Make several asynchronous get requests for target URL:
     // fn generic<T>(_s: SGen<T>) {}
+    // Returns a Result that contains a tuple of 2 Vectors:
+    // The first vector contains the result of the API responses being serialized into a struct.
+    // The second vector contains the URLs that failed to serialize into a struct.
     pub async fn arrest<'a, T: serde::de::DeserializeOwned>(
         self,
         paths: Vec<String>,
         struct_response: T,
-    ) -> Result<Vec<T>>
+    ) -> Result<(Vec<T>, Vec<String>)>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -105,21 +82,37 @@ impl Client {
             let tx = tx.clone();
             let aself = self.clone();
             tokio::spawn(async move {
-                tx.send(aself.api_call(&path).await).await;
+                tx.send(aself.get_url(&path).await).await;
             });
         }
         drop(tx);
         let mut api_call_results: Vec<String> = Vec::new();
+        let mut failed_urls: Vec<String> = Vec::new();
         // Read from all the channels:
-        while let Some(api_call_result) = rx.recv().await {
-            let response = api_call_result?;
-            println!("reqwest result: {:?}", response.status());
-            let text = response.text().await?;
-            api_call_results.push(text.to_string());
+        while let Some((api_call_result, url)) = rx.recv().await {
+            match api_call_result {
+                Ok(response) => {
+                    println!("reqwest result: {:?}", response.status());
+                    let body = response.text().await;
+                    match body {
+                        Ok(text) => {
+                            api_call_results.push(text.to_string());
+                        }
+                        Err(err) => {
+                            println!("Error making api call to {}: {}", url, err);
+                            failed_urls.push(url);
+                        }
+                    }
+                }
+                Err(err) => {
+                    println!("error reaching URL {}", err);
+                    failed_urls.push(url);
+                }
+            }
         }
         // build the serialized data and return it:
         let resulting_serialized = self.deserialize(api_call_results.clone(), struct_response)?;
-        return Ok(resulting_serialized);
+        return Ok((resulting_serialized, failed_urls));
     }
 
     // Deserialize the struct
@@ -146,6 +139,38 @@ impl Client {
         }
         return Ok(vec_of_structs);
     }
+    /*
+    // Make several asynchronous get requests for target URL:
+    pub async fn api_call_vec(self, paths: Vec<String>) -> Vec<String> {
+        let (tx, mut rx) = mpsc::channel(32);
+        for path in paths {
+            let tx = tx.clone();
+            let aself = self.clone();
+            tokio::spawn(async move {
+                tx.send(aself.get_url(&path).await).await;
+            });
+        }
+        drop(tx);
+        let mut api_call_results: Vec<String> = Vec::new();
+        // Read from all the channels:
+        //  outer match is dealing with the api
+        while let Some(api_call_result) = rx.recv().await {
+            match api_call_result {
+                Ok(response) => {
+                    println!("reqwest result: {:?}", response.status());
+                    let body = response.text().await;
+                    match body {
+                        Ok(text) => {
+                            api_call_results.push(text);
+                        }
+                        Err(err) => println!("error making API call {}", err),
+                    }
+                }
+                Err(err) => println!("error reaching URL {}", err),
+            }
+        }
+        return api_call_results;
+        */
 }
 
 #[async_trait]
